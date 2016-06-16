@@ -4,8 +4,7 @@
 import re
 
 import urllib
-import urllib2
-import cookielib
+import requests
 
 
 def getHtml(url):
@@ -28,18 +27,33 @@ def getDownloadUrls(url):
     pathlist = re.findall(repath, html)
     urls = []
     for path in pathlist:
-        print path
         if path == '/':
             continue
-        if re.search('"*(.pdf|.rar|.zip|.txt|tar.gz)"', path):
+        if path.find('.pdf') > 0 or path.find('.rar') > 0 or path.find('.zip') > 0 or path.find('.tar.gz') > 0:
             urls.append(path)
             continue
-
         newurl = golbalurl + path[1:]
         urls += getDownloadUrls(newurl)
     return urls
 
+
+def downloadFile(url, index):
+    local_filename = str(index)+"-"+url.split('/')[-1]
+    # NOTE the stream=True parameter
+    r = requests.get(url, stream=True)
+    with open(local_filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+                f.flush()
+    return local_filename
+
+
 # data = {'username': 'www.linuxidc.com', 'passworld': 'www.linuxidc.com'}
 golbalurl = 'http://linux.linuxidc.com/'
 pathlist = getDownloadUrls(golbalurl)
-print pathlist
+n = 0
+for path in pathlist:
+    print "loadfile:", path.split('/')[-1]
+    downloadFile(golbalurl + path, n)
+    n += 1
